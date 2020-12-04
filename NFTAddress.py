@@ -386,8 +386,7 @@ class TokenData:
             issueDateTime = sp.TTimestamp,
             url = sp.TString,
             authoritiesAlias = sp.TSet(t = sp.TString),
-            authorities = sp.TSet(t = sp.TAddress),
-            sigS = sp.TSet(t = sp.TSignature)
+            authorities = sp.TSet(t = sp.TAddress)
             )         
 
 ##
@@ -617,8 +616,7 @@ class FA2_mint(FA2_core):
                                                               issueDateTime = params.issueDateTime,
                                                               url = params.url,
                                                               authoritiesAlias = params.authoritiesAlias,
-                                                              authorities = params.authorities,
-                                                              sigS = params.sigS)
+                                                              authorities = params.authorities)
              self.data.tokenHash[params._hash] = params.token_id
 
 class FA2_token_metadata(FA2_core):
@@ -743,8 +741,7 @@ def add_test(config, is_default = True):
                             issueDateTime = sp.timestamp(1000),
                             url = "https://alt.smartpy.io/ide",
                             authoritiesAlias = sp.set(["ben","tom","jerry"]),
-                            authorities = sp.set([sp.address("tz1..."),sp.address("tz1..."),sp.address("tz1...")]),
-                            sigS = sp.set([testsig])).run(sender = admin)
+                            authorities = sp.set([sp.address("tz1..."),sp.address("tz1..."),sp.address("tz1...")])).run(sender = admin)
 
             return
         scenario.h2("Initial Minting")
