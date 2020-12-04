@@ -1,5 +1,20 @@
 import smartpy as sp
 
+class TokenData:
+    def data_type():
+        return sp.TRecord(
+            oracleContract = sp.TAddress,
+            groupId = sp.TString,
+            to = sp.TAddress,
+            toAlias = sp.TString,
+            assetType = sp.TString,
+            state = sp.TString,
+            _hash  = sp.TBytes,
+            issueDateTime = sp.TTimestamp,
+            url = sp.TString,
+            authoritiesAlias = sp.TSet(t = sp.TString),
+            authorities = sp.TSet(t = sp.TAddress)
+            )
 
 class Oracle(sp.Contract):
     def __init__(self, NFTAddress, minSignerRequired, adminAddress, groupId):
@@ -14,20 +29,7 @@ class Oracle(sp.Contract):
                   tokenData=sp.map(
                       tkey=sp.TNat,
                       tvalue=sp.TMap(
-                          k=sp.TBytes, v=sp.TRecord(
-                              oracleContract=sp.TAddress,
-                              groupId=sp.TString,
-                              to=sp.TAddress,
-                              toAlias=sp.TString,
-                              assetType=sp.TString,
-                              state=sp.TString,
-                              _hash=sp.TBytes,
-                              issueDateTime=sp.TTimestamp,
-                              url=sp.TString,
-                              authoritiesAlias=sp.TSet(t=sp.TString),
-                              authorities=sp.TSet(t=sp.TAddress),
-                              # sigS=sp.TSet(t=sp.TSignature)
-                          )
+                          k=sp.TBytes, v= TokenData.data_type()
                       )
                   ),
                   tokenStatus=sp.map(tkey=sp.TNat, tvalue=sp.TMap(k=sp.TBytes, v=sp.TNat)),
