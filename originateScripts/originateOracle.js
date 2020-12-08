@@ -1,8 +1,9 @@
-import {TezosToolKit, TezosOperationError} from '@taquito/taquito';
+import {TezosToolkit, TezosOperationError} from '@taquito/taquito';
+import { InMemorySigner } from '@taquito/signer'
 import oracleCodeJSON from '../Contracts/Oracle/code.js';
 import oracleStorageJSON from '../Contracts/Oracle/storage';
 
-const Tezos = new TezosToolKit('https://delphinet-tezos.giganode.io');
+const Tezos = new TezosToolkit('https://delphinet-tezos.giganode.io');
 const util = require("util");
 
 Tezos.setSignerProvider(new InMemorySigner('edskRr8dPoqwy3qaRzPH1qYqpXf23oEsmQ93sPNzdAo1ZjUqSmFDz8j8PiZuHyiUKxaeTCoBEmagB2HDYXT1nUFDPwyJXTrGHq'));
