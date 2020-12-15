@@ -13,19 +13,21 @@ class TokenData:
             issueDateTime = sp.TTimestamp,
             url = sp.TString,
             authoritiesAlias = sp.TSet(t = sp.TString),
-            authorities = sp.TSet(t = sp.TAddress)
+            authorities = sp.TSet(t = sp.TAddress),
+            signatures_hashed = sp.TSet(t = sp.TBytes)
             )
 
 class Oracle(sp.Contract):
-    def __init__(self, NFTAddress, minSignerRequired, adminAddress, groupId):
+    def __init__(self, NFTAddress, minSignerRequired, adminAddress, groupId, admin_pk):
         self.init(NFTAddress=NFTAddress,
                   minSignerRequired=minSignerRequired,
                   adminAddress=adminAddress,
+                  adminPublicKey = admin_pk,
                   groupId=groupId,
                   whiteListedAddresses=sp.set([adminAddress], t=sp.TAddress),
                   signerAddress=sp.map(tkey=sp.TString, tvalue=sp.TAddress),
                   signerAddressAlias=sp.map(tkey=sp.TAddress, tvalue=sp.TString),
-                  #   sigS = sp.set(t = sp.TSignature),
+                  whitelist_signature_hashed = sp.set(t = sp.TBytes),
                   tokenData=sp.map(
                       tkey=sp.TNat,
                       tvalue=sp.TMap(
@@ -41,38 +43,23 @@ class Oracle(sp.Contract):
                                         ))
                   )
 
+    #change admin
     @sp.entry_point
     def setAdmin(self, params):
+        sp.verify(sp.sender ==self.data.adminAddress)
         self.data.adminAddress = params
 
     @sp.entry_point
     def insertWhitelistedAddress(self, params):
-        sp.verify(sp.sender == self.data.adminAddress)
         sp.verify(self._isWhitelisted(params.signerPublicKey))
-        _hash = sp.pack("I am the signer")
-        sp.verify(sp.check_signature(params.publicSignerHash, params.signature, _hash),
+        sp.verify(~self.data.whitelist_signature_hashed.contains(sp.pack(params.signature)))
+        sp.verify(sp.check_signature(self.data.adminPublicKey, params.signature, params.packed_message),
                   "verify hash: Invalid signature")
         self.data.signerAddress[params.alias] = params.address
         self.data.signerAddressAlias[params.address] = params.alias
         self.data.whiteListedAddresses.add(params.address)
-
-    # @sp.entry_point
-    # def insertTokenData(self, params):
-    #     self.data.tokenData[params.tokenId] = sp.map({
-    #         params._hash: sp.record(
-    #             oracleContract=sp.self_address,
-    #             groupId=self.data.groupId,
-    #             to=params._to,
-    #             toAlias=params._toAlias,
-    #             assetType=params._assetType,
-    #             state=params._state,
-    #             _hash=params._hash,
-    #             issueDateTime=sp.now,
-    #             url=params._url,
-    #             authoritiesAlias=sp.set([self.data.signerAddressAlias[params._signerPublicKey]], t=sp.TString),
-    #             authorities=sp.set([params._signerPublicKey], t=sp.TAddress)
-    #         # sigS=sp.set([params._sigS], t=sp.TSignature))
-    #     )})
+        self.data.whitelist_signature_hashed.add(sp.pack(params.signature))
+        
         
     @sp.entry_point
     def issueCert(self,params):
@@ -115,18 +102,21 @@ class Oracle(sp.Contract):
             self.data.tokenData[_tokenId][_hash].authorities.add(_signerPublicKey)
             self.data.tokenData[_tokenId][_hash].authoritiesAlias.add(self.data.signerAddressAlias[_signerPublicKey])
             self.data.tokenAuthSings[_tokenId][_hash][_signerPublicKey] = True
+            
+            self.data.tokenData[_tokenId][_hash].signatures_hashed.add(sp.pack(_sigS))
+            
         sp.else:
             sp.if self.data.tokenAuthSings.contains(_tokenId) & self.data.tokenAuthSings[_tokenId].contains(_hash) & self.data.tokenAuthSings[_tokenId][_hash].contains(_signerPublicKey):
                 sp.verify(self.data.tokenAuthSings[_tokenId][_hash][_signerPublicKey] == False)
-            self.data.tokenData[_tokenId] = sp.map({_hash: sp.record(oracleContract = sp.self_address, groupId = self.data.groupId, to = _to, toAlias = _toAlias, assetType = _assetType,state = _state, _hash = _hash, issueDateTime = sp.now, url = _url, authoritiesAlias = sp.set([self.data.signerAddressAlias[_signerPublicKey]]), authorities = sp.set([_signerPublicKey]))})
+            self.data.tokenData[_tokenId] = sp.map({_hash: sp.record(oracleContract = sp.self_address, groupId = self.data.groupId, to = _to, toAlias = _toAlias, assetType = _assetType,state = _state, _hash = _hash, issueDateTime = sp.now, url = _url, authoritiesAlias = sp.set([self.data.signerAddressAlias[_signerPublicKey]]), authorities = sp.set([_signerPublicKey]), signatures_hashed = sp.set([sp.pack(_sigS)]))})
             self.data.tokenAuthSings[_tokenId] = sp.map({_hash : sp.map({_signerPublicKey : True})})
             self.data.tokenStatus[_tokenId] = sp.map({_hash : 1})
             
         
         sp.if self.data.tokenData.contains(_tokenId) & self.data.tokenData[_tokenId].contains(_hash):
             sp.if sp.len(self.data.tokenData[_tokenId][_hash].authorities) == self.data.minSignerRequired:
-                c = sp.contract(sp.TRecord(address = sp.TAddress,token_id = sp.TNat,oracleContract = sp.TAddress,groupId = sp.TString,to = sp.TAddress,toAlias = sp.TString,assetType = sp.TString,state = sp.TString,_hash = sp.TBytes,issueDateTime = sp.TTimestamp,url = sp.TString,authoritiesAlias = sp.TSet(t = sp.TString),authorities = sp.TSet(t = sp.TAddress)),address = self.data.NFTAddress,entry_point = "mint").open_some()
-                content = sp.record(address = self.data.tokerOwner[_tokenId][_hash], token_id = _tokenId, oracleContract = self.data.tokenData[_tokenId][_hash].oracleContract, groupId = self.data.tokenData[_tokenId][_hash].groupId, to = self.data.tokenData[_tokenId][_hash].to, toAlias = self.data.tokenData[_tokenId][_hash].toAlias, assetType = self.data.tokenData[_tokenId][_hash].assetType, state = self.data.tokenData[_tokenId][_hash].state, _hash  = self.data.tokenData[_tokenId][_hash]._hash, issueDateTime = self.data.tokenData[_tokenId][_hash].issueDateTime, url = self.data.tokenData[_tokenId][_hash].url, authoritiesAlias= self.data.tokenData[_tokenId][_hash].authoritiesAlias, authorities = self.data.tokenData[_tokenId][_hash].authorities)
+                c = sp.contract(sp.TRecord(address = sp.TAddress,token_id = sp.TNat,oracleContract = sp.TAddress,groupId = sp.TString,to = sp.TAddress,toAlias = sp.TString,assetType = sp.TString,state = sp.TString,_hash = sp.TBytes,issueDateTime = sp.TTimestamp,url = sp.TString,authoritiesAlias = sp.TSet(t = sp.TString),authorities = sp.TSet(t = sp.TAddress), signatures_hashed = sp.TSet(t = sp.TBytes)),address = self.data.NFTAddress,entry_point = "mint").open_some()
+                content = sp.record(address = self.data.tokerOwner[_tokenId][_hash], token_id = _tokenId, oracleContract = self.data.tokenData[_tokenId][_hash].oracleContract, groupId = self.data.tokenData[_tokenId][_hash].groupId, to = self.data.tokenData[_tokenId][_hash].to, toAlias = self.data.tokenData[_tokenId][_hash].toAlias, assetType = self.data.tokenData[_tokenId][_hash].assetType, state = self.data.tokenData[_tokenId][_hash].state, _hash  = self.data.tokenData[_tokenId][_hash]._hash, issueDateTime = self.data.tokenData[_tokenId][_hash].issueDateTime, url = self.data.tokenData[_tokenId][_hash].url, authoritiesAlias= self.data.tokenData[_tokenId][_hash].authoritiesAlias, authorities = self.data.tokenData[_tokenId][_hash].authorities, signatures_hashed = self.data.tokenData[_tokenId][_hash].signatures_hashed)
                 sp.transfer(content,sp.mutez(0),c)
                 self.data.tokenStatus[_tokenId][_hash] = 2
                 del self.data.tokenData[_tokenId][_hash]
@@ -153,38 +143,33 @@ def test():
 
     sampleNftAddress = sp.address("KT1Q4jEteeKTsU2itpXithzD3evidxnUxi5C")
 
-    c1 = Oracle(NFTAddress=sampleNftAddress, minSignerRequired=2, adminAddress=admin.address, groupId="testing123")
+    c1 = Oracle(NFTAddress=sampleNftAddress, minSignerRequired=2, adminAddress=admin.address,groupId="testing123", admin_pk = sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"))
     scenario += c1
     scenario.p("Change Admin")
-    scenario += c1.setAdmin(admin.address)
+    scenario += c1.setAdmin(admin.address).run(sender = admin)
     scenario.p("insert into whitelist")
-    testsig = sp.make_signature(admin.secret_key, sp.pack("I am the signer"), message_format='Raw')
+    message_to_sign = sp.blake2b(sp.pack(sp.record(address = alice.address, timestamp = sp.timestamp(0))))
+    testsig = sp.make_signature(admin.secret_key, message_to_sign, message_format='Raw')
+    message_for_issue_cert = sp.pack("I am the signer")
+    issueCert_sig = sp.make_signature(admin.secret_key,message_for_issue_cert , message_format='Raw')
     scenario += c1.insertWhitelistedAddress(
         signerPublicKey=admin.address,
         publicSignerHash=sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"),
         signature=testsig,
         address=alice.address,
-        alias="alice"
+        alias="alice",
+        packed_message = message_to_sign
     ).run(sender=admin)
+    message_to_sign = sp.blake2b(sp.pack(sp.record(address = admin.address, timestamp = sp.timestamp(1))))
+    testsig = sp.make_signature(admin.secret_key, message_to_sign, message_format='Raw')
     scenario += c1.insertWhitelistedAddress(
         signerPublicKey=admin.address,
         publicSignerHash=sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"),
         signature=testsig,
         address=admin.address,
-        alias="admin"
+        alias="admin",
+        packed_message = message_to_sign
     ).run(sender=admin)
-    # scenario.p("insert into tokendata")
-    # scenario += c1.insertTokenData(
-    #     tokenId=1,
-    #     _hash=sp.pack("I am the signer"),
-    #     _to=bob.address,
-    #     _toAlias="Bob",
-    #     _assetType="neutral",
-    #     _state="new",
-    #     _url="https://bitcoin.com",
-    #     _signerPublicKey=alice.address,
-    #     # _sigS=testsig
-    # )
     scenario.p("issuing cert")
     scenario += c1.issueCert(
         tokenId = 2,
@@ -192,7 +177,7 @@ def test():
         _toAlias = "alice",
         _signerPublicKey=admin.address,
         _publicSignerHash=sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"),
-        _sigS=testsig,
+        _sigS=issueCert_sig,
         _assetType = "card",
         _state = "new",
         _url = "https://mco.com"
@@ -224,12 +209,15 @@ def test():
         _url = "https://mco.com"        
         ).run(sender = admin)
     scenario.p("Add bob to whitelist")
+    message_to_sign = sp.blake2b(sp.pack(sp.record(address = bob.address, timestamp = sp.timestamp(2))))
+    testsig = sp.make_signature(admin.secret_key, message_to_sign, message_format='Raw')
     scenario += c1.insertWhitelistedAddress(
         signerPublicKey=admin.address,
         publicSignerHash=sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"),
         signature=testsig,
         address=bob.address,
-        alias="bob"
+        alias="bob",
+        packed_message = message_to_sign
     ).run(sender=admin)
     scenario.p("Bob tries to add his signature to tokenId already minted")
     scenario += c1.issueCert(
