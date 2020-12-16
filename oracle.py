@@ -46,8 +46,11 @@ class Oracle(sp.Contract):
     #change admin
     @sp.entry_point
     def setAdmin(self, params):
+        adminAddress = params.adminAddress
+        admin_pk = params.admin_pk
         sp.verify(sp.sender == self.data.adminAddress)
-        self.data.adminAddress = params
+        self.data.adminAddress = adminAddress
+        self.data.adminPublicKey = admin_pk
 
     @sp.entry_point
     def insertWhitelistedAddress(self, params):
@@ -213,7 +216,7 @@ def test():
         )
     scenario += c1
     scenario.p("Change Admin")
-    scenario += c1.setAdmin(admin.address).run(sender = admin)
+    scenario += c1.setAdmin(sp.record(adminAddress= admin.address, admin_pk =sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"))).run(sender = admin)
     scenario.p("insert into whitelist")
     
     message_to_sign = sp.blake2b(sp.pack(sp.record(address = alice.address, pubKeyToBeWhitelisted = sp.key("edpkuvNy6TuQ2z8o9wnoaTtTXkzQk7nhegCHfxBc4ecsd4qG71KYNG"),alias = "alice" ,timestamp = sp.timestamp(0))))
