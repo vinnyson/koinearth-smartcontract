@@ -643,9 +643,9 @@ class FA2_whitelist(FA2_core):
         return self.data.whitelist.contains(sender)
     
     @sp.entry_point
-    def addWhitelistedbySign(self, params):
+    def addAccountToWhitelist(self, params):
         sp.verify(self.data.oracleFactoryAddress == sp.sender)
-        self.data.whitelist.add(params._account)
+        self.data.whitelist.add(params)
         
 
 class FA2(FA2_token_metadata, FA2_mint, FA2_administrator, FA2_pause, FA2_whitelist,FA2_core):
@@ -725,12 +725,11 @@ def add_test(config, is_default = True):
         if config.non_fungible:
             # TODO
             scenario.h2("test add to whitelist")
-            scenario.p("Adds Alice to the whitelist set with wrong public key")
-            sig = sp.make_signature(alice.secret_key,sp.pack("hello"))
-            scenario += c1.addWhitelistedbySign(signerPublicKey = sp.key("edpk...."),signature = sig, _hash = sp.pack("hello"), _account= alice.address, signerAddress = alice.address).run(sender = alice, valid = False)
+            scenario.p("Adds Alice to the whitelist set with non oracle factory")
+            scenario += c1.addAccountToWhitelist(alice.address).run(sender = sp.address("KT1WRONG"), valid = False)
             scenario.h2("Add Bob to whitelist")
             scenario.p("Admin publickey : edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2")           
-            scenario += c1.addWhitelistedbySign(signerPublicKey = sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"), signature = sp.make_signature(admin.secret_key,sp.pack("hello")), signerAddress = admin.address, _account = bob.address, _hash = sp.pack("hello")).run(sender = sp.address("KT1HjMfN66eJNXa2ZiZmfeeHdwTkb6aZQJLE"))
+            scenario += c1.addAccountToWhitelist(bob.address).run(sender = sp.address("KT1HjMfN66eJNXa2ZiZmfeeHdwTkb6aZQJLE"))
             scenario.h2("Mint token for Alice")
             scenario.p("mint an NFT with tokenData Attached")
             first_message_packed = sp.pack(sp.record(o = "Hello World", n = "should work", c = 0))

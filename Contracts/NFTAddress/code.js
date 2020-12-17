@@ -185,20 +185,7 @@ export default [
               {
                 "prim": "or",
                 "args": [
-                  {
-                    "prim": "pair",
-                    "args": [
-                      { "prim": "pair", "args": [ { "prim": "address", "annots": [ "%_account" ] }, { "prim": "bytes", "annots": [ "%_hash" ] } ] },
-                      {
-                        "prim": "pair",
-                        "args": [
-                          { "prim": "signature", "annots": [ "%signature" ] },
-                          { "prim": "pair", "args": [ { "prim": "address", "annots": [ "%signerAddress" ] }, { "prim": "key", "annots": [ "%signerPublicKey" ] } ] }
-                        ]
-                      }
-                    ],
-                    "annots": [ "%addWhitelistedbySign" ]
-                  },
+                  { "prim": "address", "annots": [ "%addAccountToWhitelist" ] },
                   {
                     "prim": "pair",
                     "args": [
@@ -469,8 +456,6 @@ export default [
                           { "prim": "CDR" },
                           { "prim": "PUSH", "args": [ { "prim": "bool" }, { "prim": "True" } ] },
                           { "prim": "DIG", "args": [ { "int": "6" } ] },
-                          { "prim": "CAR" },
-                          { "prim": "CAR" },
                           { "prim": "UPDATE" },
                           { "prim": "SWAP" },
                           { "prim": "PAIR" },
