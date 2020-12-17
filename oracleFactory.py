@@ -217,12 +217,12 @@ class Oracle(sp.Contract):
         return address == self.data.adminAddress
         
 class OracleFactory(sp.Contract):
-    def __init__(self, NFTAddress, factoryAdmin):
+    def __init__(self, NFTAddress, factoryAdmin, factoryAdminPublicKey):
         self.oracle = Oracle()
         self.init(OracleList = sp.big_map(tkey = sp.TString ,tvalue = sp.TAddress),
                   NFTAddress = NFTAddress,
                   factoryAdmin = factoryAdmin,
-                  factoryAdminSignature = factoryAdminSignature 
+                  factoryAdminPublicKey = factoryAdminPublicKey 
                   )
 
     @sp.entry_point
@@ -236,14 +236,24 @@ class OracleFactory(sp.Contract):
         _groupId = params.groupId
         _admin_pk = params.admin_pk
         _adminAddress = params.adminAddress
-        
         _timestamp = params._timestamp
         _factoryAdminSignature = params._factoryAdminSignature
         
+        _contstructed_message = sp.blake2b(
+            sp.pack(
+                sp.record(
+                    minSignerRequire = _minSignerRequire,
+                    groupId = _groupId,
+                    admin_pk= _admin_pk,
+                    timestamp = _timestamp
+                    )
+                )
+            )
+        sp.verify(~self.data.OracleList.contains(_groupId),"group id exist")
         #checkSignature
-        #call addWhitelistedbySign of NFT address
-        
-        sp.verify(~self.data.OracleList.contains(_groupId))
+        sp.verify(sp.check_signature(self.data.factoryAdminPublicKey,
+                                     _factoryAdminSignature, 
+                                     _contstructed_message),"verify hash: Invalid signature")
         
         c = sp.create_contract(storage = sp.record(NFTAddress = self.data.NFTAddress,
                                                    minSignerRequired = _minSignerRequire,
@@ -257,8 +267,17 @@ class OracleFactory(sp.Contract):
                                                    tokenData = sp.map(), 
                                                    tokenStatus = sp.map(), 
                                                    tokerOwner = sp.map(),
-                                                   tokenAuthSings = sp.map()), contract = self.oracle)
+                                                   tokenAuthSings = sp.map()
+                                                   ), contract = self.oracle)
         self.data.OracleList[_groupId] = c
+        #call addWhitelistedbySign of NFT address
+        dest = sp.contract(sp.TAddress,
+            self.data.NFTAddress,
+            entry_point = "addWhitelistedbySign").open_some()
+        sp.transfer(c,
+            sp.mutez(0),
+            dest
+            )
         
     def _getOracleAddress(self, params):
         sp.verify(self.data.OracleList.contains(params), "INVALID_GROUP_ID")
@@ -268,12 +287,33 @@ class OracleFactory(sp.Contract):
 def test():
     scenario = sp.test_scenario()
     scenario.h1("Create Contract")
+    admin = sp.test_account("Administrator")
+    
+    scenario.h1("Accounts")
+    scenario.show([admin])
+    
     c1 = OracleFactory(NFTAddress = sp.address("KT1Q4jEteeKTsU2itpXithzD3evidxnUxi5C"), 
-                       factoryAdmin = sp.address("tz1hdQscorfqMzFqYxnrApuS5i6QSTuoAp3w"))
+                       factoryAdmin = sp.address("tz1hdQscorfqMzFqYxnrApuS5i6QSTuoAp3w"),
+                       factoryAdminPublicKey = admin.public_key)
     scenario += c1
-    scenario += c1.create(sp.record(groupId = "testing123",
-                                    minSignerRequire = 2,
-                                    adminAddress = sp.address("tz1235466.."),
-                                    admin_pk = sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2")
+    
+    _contstructed_message = sp.blake2b(
+    sp.pack(
+        sp.record(
+            minSignerRequire = 2,
+            groupId = "testing123",
+            admin_pk= admin.public_key,
+            timestamp = sp.timestamp(0)
+            )
+        )
+    )
+    
+    _factoryAdminSignature = sp.make_signature(admin.secret_key, _contstructed_message, message_format = 'Raw')
+    scenario += c1.create(sp.record(minSignerRequire = 2,
+                                    groupId = "testing123",
+                                    admin_pk = admin.public_key,
+                                    adminAddress = admin.address,
+                                    _timestamp = sp.timestamp(0),
+                                    _factoryAdminSignature = _factoryAdminSignature
                                     )
-                          )
+                          ).run(sender = admin)

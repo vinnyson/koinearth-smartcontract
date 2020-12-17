@@ -19,8 +19,8 @@ export default {
     {
       "prim": "Pair",
       "args": [
-        { "prim": "Pair", "args": [ { "prim": "False" }, { "prim": "Pair", "args": [ [], [] ] } ] },
-        { "prim": "Pair", "args": [ [], { "prim": "Pair", "args": [ [ { "string": "tz1hdQscorfqMzFqYxnrApuS5i6QSTuoAp3w" } ], [] ] } ] }
+        { "prim": "Pair", "args": [ { "string": "KT1HjMfN66eJNXa2ZiZmfeeHdwTkb6aZQJLE" }, { "prim": "Pair", "args": [ { "prim": "False" }, [] ] } ] },
+        { "prim": "Pair", "args": [ [], { "prim": "Pair", "args": [ [], [ { "string": "tz1hdQscorfqMzFqYxnrApuS5i6QSTuoAp3w" } ] ] } ] }
       ]
     }
   ]

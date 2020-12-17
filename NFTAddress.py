@@ -645,10 +645,7 @@ class FA2_whitelist(FA2_core):
     @sp.entry_point
     def addWhitelistedbySign(self, params):
         sp.verify(self.data.oracleFactoryAddress == sp.sender)
-        sp.verify(~self.data.whitelist_signature_hashed.contains(sp.pack(params.signature)))
-        sp.verify(sp.check_signature(self.data.adminPublicKey,params.signature,params._hash))
         self.data.whitelist.add(params._account)
-        self.data.whitelist_signature_hashed.add(sp.pack(params.signature))
         
 
 class FA2(FA2_token_metadata, FA2_mint, FA2_administrator, FA2_pause, FA2_whitelist,FA2_core):
@@ -659,7 +656,6 @@ class FA2(FA2_token_metadata, FA2_mint, FA2_administrator, FA2_pause, FA2_whitel
                           whitelist = sp.set([admin],t = sp.TAddress),
                           tokenHash = sp.big_map(tkey = sp.TBytes, tvalue = sp.TNat),
                           tokenData = sp.big_map(tkey = sp.TNat, tvalue = TokenData.data_type()),
-                          whitelist_signature_hashed = sp.set(t = sp.TBytes),
                           adminPublicKey = admin_pk,
                           oracleFactoryAddress = oracleFactoryAddress                         
                           )
