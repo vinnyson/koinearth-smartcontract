@@ -68,7 +68,7 @@ class Oracle(sp.Contract):
         
         _address = params.address
         _pubKeyToBeWhitelisted = params.pubKeyToBeWhitelisted
-        _alias = params.alias
+        _alias = params._alias
         _timestamp = params._timestamp
         _adminSignature = params.adminSignature
         
@@ -154,7 +154,8 @@ class Oracle(sp.Contract):
             self.data.tokenData[_tokenId] = sp.map(
                 {_hash: sp.record(oracleContract = sp.self_address,
                                   groupId = self.data.groupId, 
-                                  to = _to, toAlias = _toAlias,
+                                  to = _to,
+                                  toAlias = _toAlias,
                                   assetType = _assetType,
                                   state = _state,
                                   _hash = _hash,
