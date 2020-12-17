@@ -240,6 +240,8 @@ class OracleFactory(sp.Contract):
         _timestamp = params._timestamp
         _factoryAdminSignature = params._factoryAdminSignature
         
+        #checkSignature
+        #call addWhitelistedbySign of NFT address
         
         sp.verify(~self.data.OracleList.contains(_groupId))
         
