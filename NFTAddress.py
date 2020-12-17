@@ -386,7 +386,7 @@ class TokenData:
             issueDateTime = sp.TTimestamp,
             url = sp.TString,
             authoritiesAlias = sp.TSet(t = sp.TString),
-            authorities = sp.TSet(t = sp.TAddress),
+            authorities = sp.TSet(t = sp.TBytes),
             signatures_hashed = sp.TSet(t = sp.TBytes)
             )       
 
@@ -644,7 +644,7 @@ class FA2_whitelist(FA2_core):
     
     @sp.entry_point
     def addWhitelistedbySign(self, params):
-        sp.verify(self._isWhitelistAdmin(params.signerAddress))
+        sp.verify(self.data.oracleFactoryAddress == sp.sender)
         sp.verify(~self.data.whitelist_signature_hashed.contains(sp.pack(params.signature)))
         sp.verify(sp.check_signature(self.data.adminPublicKey,params.signature,params._hash))
         self.data.whitelist.add(params._account)
@@ -652,8 +652,17 @@ class FA2_whitelist(FA2_core):
         
 
 class FA2(FA2_token_metadata, FA2_mint, FA2_administrator, FA2_pause, FA2_whitelist,FA2_core):
-    def __init__(self, config, admin, admin_pk):
-        FA2_core.__init__(self, config, paused = False, administrator = admin, whitelist = sp.set([admin],t = sp.TAddress), tokenHash = sp.big_map(tkey = sp.TBytes, tvalue = sp.TNat), tokenData = sp.big_map(tkey = sp.TNat, tvalue = TokenData.data_type()), whitelist_signature_hashed = sp.set(t = sp.TBytes), adminPublicKey = admin_pk)
+    def __init__(self, config, admin, admin_pk, oracleFactoryAddress):
+        FA2_core.__init__(self, config,
+                          paused = False, 
+                          administrator = admin, 
+                          whitelist = sp.set([admin],t = sp.TAddress),
+                          tokenHash = sp.big_map(tkey = sp.TBytes, tvalue = sp.TNat),
+                          tokenData = sp.big_map(tkey = sp.TNat, tvalue = TokenData.data_type()),
+                          whitelist_signature_hashed = sp.set(t = sp.TBytes),
+                          adminPublicKey = admin_pk,
+                          oracleFactoryAddress = oracleFactoryAddress                         
+                          )
 
 ## ## Tests
 ##
@@ -715,7 +724,7 @@ def add_test(config, is_default = True):
         # Let's display the accounts:
         scenario.h2("Accounts")
         scenario.show([admin, alice, bob])
-        c1 = FA2(config, admin.address, sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"))
+        c1 = FA2(config, admin.address, sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"), sp.address("KT1HjMfN66eJNXa2ZiZmfeeHdwTkb6aZQJLE"))
         scenario += c1
         if config.non_fungible:
             # TODO
@@ -725,7 +734,7 @@ def add_test(config, is_default = True):
             scenario += c1.addWhitelistedbySign(signerPublicKey = sp.key("edpk...."),signature = sig, _hash = sp.pack("hello"), _account= alice.address, signerAddress = alice.address).run(sender = alice, valid = False)
             scenario.h2("Add Bob to whitelist")
             scenario.p("Admin publickey : edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2")           
-            scenario += c1.addWhitelistedbySign(signerPublicKey = sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"), signature = sp.make_signature(admin.secret_key,sp.pack("hello")), signerAddress = admin.address, _account = bob.address, _hash = sp.pack("hello")).run(sender = admin)
+            scenario += c1.addWhitelistedbySign(signerPublicKey = sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"), signature = sp.make_signature(admin.secret_key,sp.pack("hello")), signerAddress = admin.address, _account = bob.address, _hash = sp.pack("hello")).run(sender = sp.address("KT1HjMfN66eJNXa2ZiZmfeeHdwTkb6aZQJLE"))
             scenario.h2("Mint token for Alice")
             scenario.p("mint an NFT with tokenData Attached")
             first_message_packed = sp.pack(sp.record(o = "Hello World", n = "should work", c = 0))
@@ -746,8 +755,8 @@ def add_test(config, is_default = True):
                             issueDateTime = sp.timestamp(1000),
                             url = "https://alt.smartpy.io/ide",
                             authoritiesAlias = sp.set(["ben","tom","jerry"]),
-                            authorities = sp.set([sp.address("tz1..."),sp.address("tz1..."),sp.address("tz1...")]),
-                            signatures_hashed = sp.set([sp.bytes('0xABCDEF42')])).run(sender = bob)
+                            authorities = sp.set([sp.bytes('0xABCDEF42'),sp.bytes('0xABCDEF42'),sp.bytes('0xABCDEF42')]),
+                            signatures_hashed = sp.set([sp.bytes('0xABCDEF42')])).run(sender = bob.address)
 
             return
         scenario.h2("Initial Minting")
