@@ -3080,7 +3080,7 @@ export default [
               { "prim": "DUG", "args": [ { "int": "3" } ] },
               { "prim": "CAR" },
               { "prim": "CAR" },
-              { "prim": "CONTRACT", "args": [ { "prim": "address" } ], "annots": [ "%addWhitelistedbySign" ] },
+              { "prim": "CONTRACT", "args": [ { "prim": "address" } ], "annots": [ "%addAccountToWhitelist" ] },
               { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "275" } ] }, { "prim": "FAILWITH" } ], [] ] },
               { "prim": "PUSH", "args": [ { "prim": "mutez" }, { "int": "0" } ] },
               { "prim": "DIG", "args": [ { "int": "3" } ] },

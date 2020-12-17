@@ -274,7 +274,7 @@ class OracleFactory(sp.Contract):
         #call addWhitelistedbySign of NFT address
         dest = sp.contract(sp.TAddress,
             self.data.NFTAddress,
-            entry_point = "addWhitelistedbySign").open_some()
+            entry_point = "addAccountToWhitelist").open_some()
         sp.transfer(c,
             sp.mutez(0),
             dest
