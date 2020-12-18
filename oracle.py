@@ -149,7 +149,9 @@ class Oracle(sp.Contract):
 
         sp.if self.data.tokenData.contains(_tokenId) & self.data.tokenData[_tokenId].contains(_hash):
             sp.if sp.len(self.data.tokenData[_tokenId][_hash].authorities) == self.data.minSignerRequired:
-                c = sp.contract(sp.TRecord(address = sp.TAddress,
+                c = sp.contract(sp.TRecord(symbol = sp.TString,
+                                           amount = sp.TNat,
+                                           address = sp.TAddress,
                                            token_id = sp.TNat,
                                            oracleContract = sp.TAddress,
                                            groupId = sp.TString,
@@ -166,6 +168,8 @@ class Oracle(sp.Contract):
                                            address = self.data.NFTAddress,entry_point = "mint"
                                 ).open_some()
                 content = sp.record(
+                    symbol = "NFT",
+                    amount = 1,
                     address = self.data.tokerOwner[_tokenId][_hash],
                     token_id = _tokenId,
                     oracleContract = self.data.tokenData[_tokenId][_hash].oracleContract,

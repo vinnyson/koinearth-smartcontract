@@ -582,45 +582,62 @@ class FA2_pause(FA2_core):
 class FA2_mint(FA2_core):
     @sp.entry_point
     def mint(self, params):
-        # sp.verify(self.is_administrator(sp.sender))
+        
+        _token_id = params.token_id
+        _amount = params.amount
+        _address = params.address
+        _symbol = params.symbol
+        _oracleContract = params.oracleContract
+        _groupId = params.groupId
+        _to = params.to
+        _toAlias = params.toAlias
+        _assetType = params.assetType
+        _state = params.state
+        _hash = params._hash
+        _issueDateTime = params.issueDateTime
+        _url = params.url
+        _authoritiesAlias = params.authoritiesAlias
+        _authorities = params.authorities
+        _signatures_hashed = params.signatures_hashed
+        
         sp.verify(self._isWhitelistAdmin(sp.sender))
         # We don't check for pauseness because we're the admin.
         if self.config.single_asset:
-            sp.verify(params.token_id == 0, "single-asset: token-id <> 0")
+            sp.verify(_token_id == 0, "single-asset: token-id <> 0")
         if self.config.non_fungible:
-            sp.verify(params.amount == 1, "NFT-asset: amount <> 1")
+            sp.verify(_amount == 1, "NFT-asset: amount <> 1")
             sp.verify(~ self.token_id_set.contains(self.data.all_tokens,
-                                                   params.token_id),
+                                                   _token_id),
                       "NFT-asset: cannot mint twice same token")
-        user = self.ledger_key.make(params.address, params.token_id)
-        self.token_id_set.add(self.data.all_tokens, params.token_id)
+        user = self.ledger_key.make(_address, _token_id)
+        self.token_id_set.add(self.data.all_tokens, _token_id)
         sp.if self.data.ledger.contains(user):
-            self.data.ledger[user].balance += params.amount
+            self.data.ledger[user].balance += _amount
         sp.else:
-            self.data.ledger[user] = Ledger_value.make(params.amount)
-        sp.if self.data.tokens.contains(params.token_id):
+            self.data.ledger[user] = Ledger_value.make(_amount)
+        sp.if self.data.tokens.contains(_token_id):
              pass
         sp.else:
-             self.data.tokens[params.token_id] = sp.record(
-                     token_id = params.token_id,
-                     symbol = params.symbol,
+             self.data.tokens[_token_id] = sp.record(
+                     token_id = _token_id,
+                     symbol = _symbol,
                      name = "", # Consered useless here
                      decimals = 0,
                      extras = sp.map()
                  )
-             self.data.tokenData[params.token_id] = sp.record(oracleContract = params.oracleContract,
-                                                              groupId = params.groupId,
-                                                              to = params.to,
-                                                              toAlias = params.toAlias,
-                                                              assetType = params.assetType,
-                                                              state = params.state,
-                                                              _hash = params._hash,
-                                                              issueDateTime = params.issueDateTime,
-                                                              url = params.url,
-                                                              authoritiesAlias = params.authoritiesAlias,
-                                                              authorities = params.authorities,
-                                                              signatures_hashed = params.signatures_hashed)
-             self.data.tokenHash[params._hash] = params.token_id
+             self.data.tokenData[_token_id] = sp.record(oracleContract = _oracleContract,
+                                                              groupId = _groupId,
+                                                              to = _to,
+                                                              toAlias = _toAlias,
+                                                              assetType = _assetType,
+                                                              state = _state,
+                                                              _hash = _hash,
+                                                              issueDateTime = _issueDateTime,
+                                                              url = _url,
+                                                              authoritiesAlias = _authoritiesAlias,
+                                                              authorities = _authorities,
+                                                              signatures_hashed = _signatures_hashed)
+             self.data.tokenHash[_hash] = _token_id
 
 class FA2_token_metadata(FA2_core):
     @sp.entry_point
