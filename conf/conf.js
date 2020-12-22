@@ -5,4 +5,5 @@ export default{
     adminSecretKey: "edskRr8dPoqwy3qaRzPH1qYqpXf23oEsmQ93sPNzdAo1ZjUqSmFDz8j8PiZuHyiUKxaeTCoBEmagB2HDYXT1nUFDPwyJXTrGHq",
     //Address NFT smart contract
     NFTAddress : "",
+    OracleFactoryAddress : "",
 };

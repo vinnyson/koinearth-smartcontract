@@ -6,7 +6,7 @@ import oracleStorageJSON from '../Contracts/Oracle/storage';
 const Tezos = new TezosToolkit('https://delphinet-tezos.giganode.io');
 const util = require("util");
 
-Tezos.setSignerProvider(new InMemorySigner('edskRr8dPoqwy3qaRzPH1qYqpXf23oEsmQ93sPNzdAo1ZjUqSmFDz8j8PiZuHyiUKxaeTCoBEmagB2HDYXT1nUFDPwyJXTrGHq'));
+Tezos.setSignerProvider(new InMemorySigner(conf.adminSecretKey));
 
 export async function originateOracle(){
     try{
