@@ -606,17 +606,32 @@ class FA2_mint(FA2_core):
             sp.verify(_token_id == 0, "single-asset: token-id <> 0")
         if self.config.non_fungible:
             sp.verify(_amount == 1, "NFT-asset: amount <> 1")
-            sp.verify(~ self.token_id_set.contains(self.data.all_tokens,
-                                                   _token_id),
-                      "NFT-asset: cannot mint twice same token")
+            # sp.verify(~ self.token_id_set.contains(self.data.all_tokens,
+            #                                        _token_id),
+            #           "NFT-asset: cannot mint twice same token")
         user = self.ledger_key.make(_address, _token_id)
-        self.token_id_set.add(self.data.all_tokens, _token_id)
-        sp.if self.data.ledger.contains(user):
+        sp.if ~self.token_id_set.contains(self.data.all_tokens, _token_id):
+            self.token_id_set.add(self.data.all_tokens, _token_id)
+        sp.if self.data.ledger.contains(user) & ~self.data.tokens.contains(_token_id):
+            # sp.if ~self.data.tokens.contains(_token_id):
             self.data.ledger[user].balance += _amount
         sp.else:
             self.data.ledger[user] = Ledger_value.make(_amount)
         sp.if self.data.tokens.contains(_token_id):
-             pass
+             self.data.tokenData[_token_id].push(
+                sp.record(oracleContract = _oracleContract,
+                groupId = _groupId,
+                to = _to,
+                toAlias = _toAlias,
+                assetType = _assetType,
+                state = _state,
+                _hash = _hash,
+                issueDateTime = _issueDateTime,
+                url = _url,
+                authoritiesAlias = _authoritiesAlias,
+                authorities = _authorities,
+                signatures_hashed = _signatures_hashed)                 
+             )
         sp.else:
              self.data.tokens[_token_id] = sp.record(
                      token_id = _token_id,
@@ -625,18 +640,20 @@ class FA2_mint(FA2_core):
                      decimals = 0,
                      extras = sp.map()
                  )
-             self.data.tokenData[_token_id] = sp.record(oracleContract = _oracleContract,
-                                                              groupId = _groupId,
-                                                              to = _to,
-                                                              toAlias = _toAlias,
-                                                              assetType = _assetType,
-                                                              state = _state,
-                                                              _hash = _hash,
-                                                              issueDateTime = _issueDateTime,
-                                                              url = _url,
-                                                              authoritiesAlias = _authoritiesAlias,
-                                                              authorities = _authorities,
-                                                              signatures_hashed = _signatures_hashed)
+             self.data.tokenData[_token_id] =[
+                                                sp.record(oracleContract = _oracleContract,
+                                                groupId = _groupId,
+                                                to = _to,
+                                                toAlias = _toAlias,
+                                                assetType = _assetType,
+                                                state = _state,
+                                                _hash = _hash,
+                                                issueDateTime = _issueDateTime,
+                                                url = _url,
+                                                authoritiesAlias = _authoritiesAlias,
+                                                authorities = _authorities,
+                                                signatures_hashed = _signatures_hashed)
+                                                ]
              self.data.tokenHash[_hash] = _token_id
 
 class FA2_token_metadata(FA2_core):
@@ -672,7 +689,7 @@ class FA2(FA2_token_metadata, FA2_mint, FA2_administrator, FA2_pause, FA2_whitel
                           administrator = admin, 
                           whitelist = sp.set([admin],t = sp.TAddress),
                           tokenHash = sp.big_map(tkey = sp.TBytes, tvalue = sp.TNat),
-                          tokenData = sp.big_map(tkey = sp.TNat, tvalue = TokenData.data_type()),
+                          tokenData = sp.big_map(tkey = sp.TNat, tvalue = sp.TList(t = TokenData.data_type())),
                           adminPublicKey = admin_pk,
                           oracleFactoryAddress = oracleFactoryAddress                         
                           )
@@ -769,6 +786,24 @@ def add_test(config, is_default = True):
                             authoritiesAlias = sp.set(["ben","tom","jerry"]),
                             authorities = sp.set([sp.bytes('0xABCDEF42'),sp.bytes('0xABCDEF42'),sp.bytes('0xABCDEF42')]),
                             signatures_hashed = sp.set([sp.bytes('0xABCDEF42')])).run(sender = bob.address)
+            scenario.h2("update tokenData of exisiting token")
+            scenario += c1.mint(address = bob.address,
+                            amount = 1,
+                            symbol = 'TK1',
+                            token_id = 1,
+                            oracleContract = sp.address("KT1ThEdxfUcWUwqsdergy"),
+                            groupId = "123456",
+                            to = bob.address, 
+                            toAlias = "bob",
+                            assetType = "free asset",
+                            state = "completed",
+                            _hash = sp.bytes("0xABCDEF42"),
+                            issueDateTime = sp.timestamp(1000),
+                            url = "https://yolo.com/ide",
+                            authoritiesAlias = sp.set(["xxx","vvv","yyy"]),
+                            authorities = sp.set([sp.bytes('0xABCDEF42'),sp.bytes('0xABCDEF42'),sp.bytes('0xABCDEF42')]),
+                            signatures_hashed = sp.set([sp.bytes('0xABCDEF42')])).run(sender = bob.address)
+            # scenario += c1.mint(address = bob.address).run(sender = bob.address)                
 
             return
         scenario.h2("Initial Minting")
