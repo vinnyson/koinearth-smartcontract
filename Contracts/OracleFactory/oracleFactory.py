@@ -170,28 +170,54 @@ class Oracle(sp.Contract):
             sp.if self.data.tokenAuthSings.contains(_tokenSymbol) & self.data.tokenAuthSings[_tokenSymbol].contains(_hash) & self.data.tokenAuthSings[_tokenSymbol][_hash].contains(sp.pack(_signerPublicKey)):
                 sp.verify(self.data.tokenAuthSings[_tokenSymbol][_hash][sp.pack(
                     _signerPublicKey)] == False)
-            self.data.tokenData[_tokenSymbol] = sp.map(
-                {_hash: sp.record(oracleContract=sp.self_address,
-                                  groupId=self.data.groupId,
-                                  to=_to,
-                                  toAlias=_toAlias,
-                                  assetType=_assetType,
-                                  state=_state,
-                                  _hash=_hash,
-                                  issueDateTime=sp.now,
-                                  url=_url,
-                                  authoritiesAlias=sp.set([
-                                      self.data.signerAddressAlias[sp.pack(
-                                          _signerPublicKey)]
-                                  ]),
-                                  authorities=sp.set(
-                                      [sp.pack(_signerPublicKey)]),
-                                  signatures_hashed=sp.set([sp.pack(_sigS)]))
-                 })
-            self.data.tokenAuthSings[_tokenSymbol] = sp.map(
-                {_hash: sp.map({sp.pack(_signerPublicKey): True})})
-            self.data.tokenStatus[_tokenSymbol] = sp.map({_hash: 1})
-
+            sp.if ~self.data.tokenData.contains(_tokenSymbol):
+                self.data.tokenData[_tokenSymbol] = sp.map(
+                    {_hash: sp.record(oracleContract=sp.self_address,
+                                    groupId=self.data.groupId,
+                                    to=_to,
+                                    toAlias=_toAlias,
+                                    assetType=_assetType,
+                                    state=_state,
+                                    _hash=_hash,
+                                    issueDateTime=sp.now,
+                                    url=_url,
+                                    authoritiesAlias=sp.set([
+                                        self.data.signerAddressAlias[sp.pack(
+                                            _signerPublicKey)]
+                                    ]),
+                                    authorities=sp.set(
+                                        [sp.pack(_signerPublicKey)]),
+                                    signatures_hashed=sp.set([sp.pack(_sigS)]))
+                    })
+            sp.else :
+                self.data.tokenData[_tokenSymbol][_hash] = sp.record(
+                                    oracleContract=sp.self_address,
+                                    groupId=self.data.groupId,
+                                    to=_to,
+                                    toAlias=_toAlias,
+                                    assetType=_assetType,
+                                    state=_state,
+                                    _hash=_hash,
+                                    issueDateTime=sp.now,
+                                    url=_url,
+                                    authoritiesAlias=sp.set([
+                                        self.data.signerAddressAlias[sp.pack(
+                                            _signerPublicKey)]
+                                    ]),
+                                    authorities=sp.set(
+                                        [sp.pack(_signerPublicKey)]),
+                                    signatures_hashed=sp.set([sp.pack(_sigS)]))               
+            sp.if ~self.data.tokenAuthSings.contains(_tokenSymbol):
+                self.data.tokenAuthSings[_tokenSymbol] = sp.map(
+                    {_hash: sp.map({sp.pack(_signerPublicKey): True})})
+            sp.else :
+                self.data.tokenAuthSings[_tokenSymbol][_hash] = sp.map(
+                    {sp.pack(_signerPublicKey): True})                
+            sp.if ~self.data.tokenStatus.contains(_tokenSymbol):
+                self.data.tokenStatus[_tokenSymbol] = sp.map({_hash: 1})
+            sp.else :
+                self.data.tokenStatus[_tokenSymbol][_hash] = 1
+                
         sp.if self.data.tokenData.contains(_tokenSymbol) & self.data.tokenData[_tokenSymbol].contains(_hash):
             sp.if sp.len(self.data.tokenData[_tokenSymbol][_hash].authorities) == self.data.minSignerRequired:
 
